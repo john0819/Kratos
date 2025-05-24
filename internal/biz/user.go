@@ -2,28 +2,51 @@ package biz
 
 import (
 	"context"
+	"errors"
+	"kratos-realworld/internal/conf"
+	"kratos-realworld/internal/pkg/middleware/auth"
 
-	v1 "kratos-realworld/api/realworld/v1"
-
-	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
+	"golang.org/x/crypto/bcrypt"
 )
 
-var (
-	// ErrUserNotFound is user not found.
-	ErrUserNotFound = errors.NotFound(v1.ErrorReason_USER_NOT_FOUND.String(), "user not found")
-)
-
+// 请求
 type User struct {
-	ID       int64
-	Username string
+	Email        string
+	Username     string
+	Bio          string
+	Image        string
+	PasswordHash string
+}
+
+// 响应
+type UserLogin struct {
 	Email    string
-	Password string
+	Username string
+	Token    string
+	Bio      string
+	Image    string
+}
+
+// hash password - 数据库中存储hash加密的pwd
+func hashPassword(pwd string) string {
+	hash, err := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)
+	if err != nil {
+		panic(err)
+	}
+	return string(hash)
+}
+
+// verify password - 登录时验证密码
+func verifyPassword(pwd string, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pwd))
+	return err == nil
 }
 
 // user - profile / follow / unfollow
 type UserRepo interface {
 	CreateUser(ctx context.Context, user *User) error
+	GetUserByEmail(ctx context.Context, email string) (*User, error)
 }
 
 type ProfileRepo interface {
@@ -31,25 +54,56 @@ type ProfileRepo interface {
 
 // GreeterUsecase is a Greeter usecase.
 type UserUsecase struct {
-	ur  UserRepo
-	pr  ProfileRepo
-	log *log.Helper
+	ur   UserRepo
+	pr   ProfileRepo
+	log  *log.Helper
+	jwtc *conf.JWT
 }
 
 func NewUserUsecase(ur UserRepo,
 	pr ProfileRepo,
 	logger log.Logger,
+	jwtc *conf.JWT,
 ) *UserUsecase {
-	return &UserUsecase{ur: ur, pr: pr, log: log.NewHelper(logger)}
+	return &UserUsecase{ur: ur, pr: pr, log: log.NewHelper(logger), jwtc: jwtc}
 }
 
-func (uc *UserUsecase) Register(ctx context.Context, user *User) error {
-	if err := uc.ur.CreateUser(ctx, user); err != nil {
-		return err
+func (uc *UserUsecase) generateToken(username string) string {
+	return auth.GenerateToken(uc.jwtc.Secret, username)
+}
+
+func (uc *UserUsecase) Register(ctx context.Context, username string, email string, password string) (*UserLogin, error) {
+	u := &User{
+		Username:     username,
+		Email:        email,
+		PasswordHash: hashPassword(password),
 	}
-	return nil
+
+	if err := uc.ur.CreateUser(ctx, u); err != nil {
+		return nil, err
+	}
+
+	// 通过jwt生成token并返回
+	return &UserLogin{
+		Email:    email,
+		Username: username,
+		Token:    uc.generateToken(username),
+	}, nil
 }
 
-func (uc *UserUsecase) Login(ctx context.Context) error {
-	return nil
+func (uc *UserUsecase) Login(ctx context.Context, email string, password string) (*UserLogin, error) {
+	u, err := uc.ur.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	if !verifyPassword(u.PasswordHash, password) {
+		return nil, errors.New("invalid password")
+	}
+	return &UserLogin{
+		Email:    u.Email,
+		Username: u.Username,
+		Token:    uc.generateToken(u.Username),
+		Bio:      u.Bio,
+		Image:    u.Image,
+	}, nil
 }

@@ -15,10 +15,17 @@ func (s *RealWorldService) Login(ctx context.Context, in *v1.LoginRequest) (*v1.
 	}, nil
 }
 
-func (s *RealWorldService) Register(ctx context.Context, in *v1.RegisterRequest) (*v1.UserResponse, error) {
+// service层要调用biz层
+func (s *RealWorldService) Register(ctx context.Context, req *v1.RegisterRequest) (*v1.UserResponse, error) {
+	user, err := s.ur.Register(ctx, req.User.Username, req.User.Email, req.User.Password)
+	if err != nil {
+		return nil, err
+	}
 	return &v1.UserResponse{
 		User: &v1.UserResponse_User{
-			Username: "john",
+			Username: user.Username,
+			Email:    user.Email,
+			Token:    user.Token,
 		},
 	}, nil
 }

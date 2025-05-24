@@ -30,3 +30,11 @@ dokcer-compose和其一些指令，用来启动镜像服务
 dokcer可视化
 
 wire - 注入，在外层进行初始化依赖注入实例
+
+middleware中间件：处理 logging、 metrics 等通用场景
+
+在server层进行注册，顺序从server层注入
+
+kratos有内置的，也可以支持自定义中间件 （jwt）
+
+比如登录、注册是不需要带登录态的，可以通过正则表达
