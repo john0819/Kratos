@@ -38,3 +38,11 @@ middleware中间件：处理 logging、 metrics 等通用场景
 kratos有内置的，也可以支持自定义中间件 （jwt）
 
 比如登录、注册是不需要带登录态的，可以通过正则表达
+
+cors 跨域请求
+网页上a域名请求b域名（被请求服务）
+a域名的客户端请求会携带header - Origin（浏览器加的，防止伪造）
+b域名的服务器 会返回Access-Control-Allow-Origin
+浏览器会做判断是否允许a域名的客户端请求发送到b域名的服务端
+
+cors会对请求的类型、header字段做限制
