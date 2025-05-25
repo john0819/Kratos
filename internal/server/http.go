@@ -11,6 +11,7 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
 	"github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/gorilla/handlers"
 )
 
 // 白名单 - login/register 不需要auth
@@ -33,6 +34,15 @@ func NewHTTPServer(c *conf.Server, jwt *conf.JWT, greeter *service.RealWorldServ
 		http.Middleware(
 			recovery.Recovery(),
 			selector.Server(auth.JWTAuth(jwt.Secret)).Match(NewSkipRoutersMatcher()).Build(),
+		),
+		http.Filter(
+			// cors 跨域请求
+			handlers.CORS(
+				handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
+				handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}),
+				// 线上实际域名
+				handlers.AllowedOrigins([]string{"*"}),
+			),
 		),
 	}
 	if c.Http.Network != "" {
