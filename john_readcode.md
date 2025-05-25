@@ -46,3 +46,13 @@ b域名的服务器 会返回Access-Control-Allow-Origin
 浏览器会做判断是否允许a域名的客户端请求发送到b域名的服务端
 
 cors会对请求的类型、header字段做限制
+
+自定义错误类型 通过errorEncoder
+CreateUser
+  → errors.NewHTTPError
+    → Kratos框架
+      → errorEncoder
+        → errors.FromError
+          → errors.As
+            → 序列化响应
+              → 发送响应
