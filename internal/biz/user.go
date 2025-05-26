@@ -3,9 +3,9 @@ package biz
 import (
 	"context"
 	"kratos-realworld/internal/conf"
-	e "kratos-realworld/internal/errors"
 	"kratos-realworld/internal/pkg/middleware/auth"
 
+	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -94,12 +94,20 @@ func (uc *UserUsecase) Register(ctx context.Context, username string, email stri
 }
 
 func (uc *UserUsecase) Login(ctx context.Context, email string, password string) (*UserLogin, error) {
+	// invalid 逻辑放在biz层
+	if len(email) == 0 {
+		return nil, errors.New(422, "email", "can not be empty")
+	}
+	if len(password) == 0 {
+		return nil, errors.New(422, "password", "can not be empty")
+	}
+
 	u, err := uc.ur.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
 	if !verifyPassword(password, u.PasswordHash) {
-		return nil, e.NewHTTPError(401, "password", "invalid password")
+		return nil, errors.Unauthorized("password", "invalid password")
 	}
 	return &UserLogin{
 		Email:    u.Email,
