@@ -56,3 +56,7 @@ CreateUser
           → errors.As
             → 序列化响应
               → 发送响应
+
+错误内容 transport层的errors转换
+服务端 - 服务器 通过统一的错误处理，错误返回内容
+客户端 可以基于http/grpc来进行响应读取

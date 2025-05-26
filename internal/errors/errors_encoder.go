@@ -2,7 +2,8 @@ package errors
 
 import (
 	"encoding/json"
-	"errors"
+
+	"github.com/go-kratos/kratos/v2/errors"
 )
 
 func NewHTTPError(code int, filed string, detail string) *HTTPError {
@@ -31,9 +32,16 @@ func FromError(err error) *HTTPError {
 		return nil
 	}
 
+	// 自定义的错误类型进行转换
 	var se *HTTPError
 	if errors.As(err, &se) {
 		return se
+	}
+
+	// kratos的错误进行转换
+	// transport层做grpc和http的错误转换
+	if se := new(errors.Error); errors.As(err, &se) {
+		return NewHTTPError(int(se.Code), se.Reason, se.Message)
 	}
 
 	return &HTTPError{}

@@ -7,6 +7,7 @@ import (
 	"kratos-realworld/internal/biz"
 	e "kratos-realworld/internal/errors"
 
+	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
 )
@@ -53,9 +54,11 @@ func (r *userRepo) CreateUser(ctx context.Context, user *biz.User) error {
 
 func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (*biz.User, error) {
 	var u User
-	if err := r.data.db.Where("email = ?", email).First(&u).Error; err != nil {
-		return nil, e.NewHTTPError(400, "user", "user not found")
+	result := r.data.db.Where("email = ?", email).First(&u)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, errors.NotFound("user", "not found by email")
 	}
+
 	return &biz.User{
 		Email:        u.Email,
 		Username:     u.Username,
