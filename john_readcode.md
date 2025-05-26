@@ -60,3 +60,14 @@ CreateUser
 错误内容 transport层的errors转换
 服务端 - 服务器 通过统一的错误处理，错误返回内容
 客户端 可以基于http/grpc来进行响应读取
+
+部署到k8s
+1. deployment 描述pod情况（pod模版 - 端口）
+    docker镜像、配置文件、挂载
+https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/
+2. service 描述服务暴露
+    对外服务
+https://kubernetes.io/zh-cn/docs/concepts/services-networking/service/
+3. gateway ingress 网关
+
+路径：gateway -> service -> pod

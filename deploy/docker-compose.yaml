@@ -1,0 +1,9 @@
+version: '3'
+services:
+  conduit:
+    image: conduit-kratos:latest
+    ports:
+      - 8000:8000
+      - 9000:9000
+    volumes:
+      - ./configs:/data/conf
