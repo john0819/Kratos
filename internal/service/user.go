@@ -17,9 +17,16 @@ func (s *RealWorldService) Login(ctx context.Context, req *v1.LoginRequest) (*v1
 		return nil, errors.NewHTTPError(422, "password", "can not be empty")
 	}
 
+	user, err := s.ur.Login(ctx, req.User.Email, req.User.Password)
+	if err != nil {
+		return nil, err
+	}
+
 	return &v1.UserResponse{
 		User: &v1.UserResponse_User{
-			Username: "john",
+			Username: user.Username,
+			Email:    user.Email,
+			Token:    user.Token,
 		},
 	}, nil
 }

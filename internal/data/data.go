@@ -28,14 +28,22 @@ func NewData(c *conf.Data, logger log.Logger, db *gorm.DB) (*Data, func(), error
 // 参数 - db的配置文件
 // 数据库连接
 func NewDB(c *conf.Data) *gorm.DB {
-	db, err := gorm.Open(mysql.Open(c.Database.Dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(c.Database.Dsn), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
 	if err != nil {
 		panic("failed to connect database")
 	}
 
-	if err := db.AutoMigrate(); err != nil {
-		panic(err)
-	}
+	// create tables
+	InitDB(db)
 
 	return db
+}
+
+// 单独指令开创建表哥
+func InitDB(db *gorm.DB) {
+	if err := db.AutoMigrate(&User{}); err != nil {
+		panic(err)
+	}
 }
