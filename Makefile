@@ -65,6 +65,16 @@ wire:
 run:
 	kratos run
 
+.PHONY: startdb
+# start db
+startdb:
+	cd deploy/mysql && docker-compose up -d
+
+.PHONY: stopdb
+# stop db
+stopdb:
+	cd deploy/mysql && docker-compose down
+
 .PHONY: all
 # generate all
 all:

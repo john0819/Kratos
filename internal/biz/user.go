@@ -2,8 +2,8 @@ package biz
 
 import (
 	"context"
-	"errors"
 	"kratos-realworld/internal/conf"
+	e "kratos-realworld/internal/errors"
 	"kratos-realworld/internal/pkg/middleware/auth"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -39,6 +39,7 @@ func hashPassword(pwd string) string {
 
 // verify password - 登录时验证密码
 func verifyPassword(pwd string, hash string) bool {
+	// 第一个明文密码, 第二个为数据库存的hash密码
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pwd))
 	return err == nil
 }
@@ -47,6 +48,7 @@ func verifyPassword(pwd string, hash string) bool {
 type UserRepo interface {
 	CreateUser(ctx context.Context, user *User) error
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
+	GetUserByUsername(ctx context.Context, username string) (*User, error)
 }
 
 type ProfileRepo interface {
@@ -96,8 +98,8 @@ func (uc *UserUsecase) Login(ctx context.Context, email string, password string)
 	if err != nil {
 		return nil, err
 	}
-	if !verifyPassword(u.PasswordHash, password) {
-		return nil, errors.New("invalid password")
+	if !verifyPassword(password, u.PasswordHash) {
+		return nil, e.NewHTTPError(401, "password", "invalid password")
 	}
 	return &UserLogin{
 		Email:    u.Email,
