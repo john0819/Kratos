@@ -9,4 +9,4 @@ data:
   database:
     dsn: "root:dangerous@tcp(127.0.0.1:3306)/realworld?charset=utf8mb4&parseTime=True&loc=Local"
 jwt:
-  secret: "hello"
+  secret: "Kn1GEInldSSoQJc/x7F/000D++yWRPvz7Bnq2K+m5T0="

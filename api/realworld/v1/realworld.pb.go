@@ -1495,8 +1495,10 @@ func (x *CreateArticleRequest_Article) GetTagList() []string {
 type UpdateUserRequest_User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Bio           string                 `protobuf:"bytes,2,opt,name=bio,proto3" json:"bio,omitempty"`
-	Image         string                 `protobuf:"bytes,3,opt,name=image,proto3" json:"image,omitempty"`
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	Username      string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
+	Bio           string                 `protobuf:"bytes,4,opt,name=bio,proto3" json:"bio,omitempty"`
+	Image         string                 `protobuf:"bytes,5,opt,name=image,proto3" json:"image,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1534,6 +1536,20 @@ func (*UpdateUserRequest_User) Descriptor() ([]byte, []int) {
 func (x *UpdateUserRequest_User) GetEmail() string {
 	if x != nil {
 		return x.Email
+	}
+	return ""
+}
+
+func (x *UpdateUserRequest_User) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+func (x *UpdateUserRequest_User) GetUsername() string {
+	if x != nil {
+		return x.Username
 	}
 	return ""
 }
@@ -2513,13 +2529,15 @@ const file_realworld_v1_realworld_proto_rawDesc = "" +
 	"\x11FollowUserRequest\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\"/\n" +
 	"\x11GetProfileRequest\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\"\x93\x01\n" +
+	"\busername\x18\x01 \x01(\tR\busername\"\xcb\x01\n" +
 	"\x11UpdateUserRequest\x128\n" +
-	"\x04user\x18\x01 \x01(\v2$.realworld.v1.UpdateUserRequest.UserR\x04user\x1aD\n" +
+	"\x04user\x18\x01 \x01(\v2$.realworld.v1.UpdateUserRequest.UserR\x04user\x1a|\n" +
 	"\x04User\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x10\n" +
-	"\x03bio\x18\x02 \x01(\tR\x03bio\x12\x14\n" +
-	"\x05image\x18\x03 \x01(\tR\x05image\"\x17\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x1a\n" +
+	"\busername\x18\x03 \x01(\tR\busername\x12\x10\n" +
+	"\x03bio\x18\x04 \x01(\tR\x03bio\x12\x14\n" +
+	"\x05image\x18\x05 \x01(\tR\x05image\"\x17\n" +
 	"\x15GetCurrentUserRequest\"}\n" +
 	"\fLoginRequest\x123\n" +
 	"\x04user\x18\x01 \x01(\v2\x1f.realworld.v1.LoginRequest.UserR\x04user\x1a8\n" +
