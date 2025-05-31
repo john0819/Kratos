@@ -19,6 +19,7 @@ type User struct {
 	Bio          string `gorm:"size:1000"`
 	Image        string `gorm:"size:1000"`
 	PasswordHash string `gorm:"size:500"`
+	Following    uint32
 }
 
 // 具体实现 biz层的interface
@@ -49,17 +50,20 @@ func (r *userRepo) CreateUser(ctx context.Context, user *biz.User) error {
 		}
 		return e.NewHTTPError(500, "database", "database error")
 	}
+	// uid需要返回到biz层 - token需要
+	user.ID = u.ID
 	return nil
 }
 
 func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (*biz.User, error) {
-	var u User
-	result := r.data.db.Where("email = ?", email).First(&u)
+	u := new(User)
+	result := r.data.db.Where("email = ?", email).First(u)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, errors.NotFound("user", "not found by email")
 	}
 
 	return &biz.User{
+		ID:           u.ID,
 		Email:        u.Email,
 		Username:     u.Username,
 		Bio:          u.Bio,

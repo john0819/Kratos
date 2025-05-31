@@ -12,6 +12,7 @@ import (
 
 // 请求
 type User struct {
+	ID           uint
 	Email        string
 	Username     string
 	Bio          string
@@ -70,8 +71,8 @@ func NewUserUsecase(ur UserRepo,
 	return &UserUsecase{ur: ur, pr: pr, log: log.NewHelper(logger), jwtc: jwtc}
 }
 
-func (uc *UserUsecase) generateToken(username string) string {
-	return auth.GenerateToken(uc.jwtc.Secret, username)
+func (uc *UserUsecase) generateToken(uid uint) string {
+	return auth.GenerateToken(uc.jwtc.Secret, uid)
 }
 
 func (uc *UserUsecase) Register(ctx context.Context, username string, email string, password string) (*UserLogin, error) {
@@ -89,7 +90,7 @@ func (uc *UserUsecase) Register(ctx context.Context, username string, email stri
 	return &UserLogin{
 		Email:    email,
 		Username: username,
-		Token:    uc.generateToken(username),
+		Token:    uc.generateToken(u.ID),
 	}, nil
 }
 
@@ -106,13 +107,14 @@ func (uc *UserUsecase) Login(ctx context.Context, email string, password string)
 	if err != nil {
 		return nil, err
 	}
+	// 比对登录密码 和 数据库对应的hash密码
 	if !verifyPassword(password, u.PasswordHash) {
 		return nil, errors.Unauthorized("password", "invalid password")
 	}
 	return &UserLogin{
 		Email:    u.Email,
 		Username: u.Username,
-		Token:    uc.generateToken(u.Username),
+		Token:    uc.generateToken(u.ID),
 		Bio:      u.Bio,
 		Image:    u.Image,
 	}, nil

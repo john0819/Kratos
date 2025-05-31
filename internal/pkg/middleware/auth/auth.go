@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -16,11 +15,21 @@ const (
 	tokenWord = "Token"
 )
 
-func GenerateToken(secret, username string) string {
+// 在context里面存储用户信息-uid
+// learn: 专门用一个字段来存储用户信息
+// 使用空结构体 - 唯一的key并且不占内存
+var currentUserKey struct{}
+
+type CurrentUser struct {
+	UserID uint
+}
+
+// 生成token, 用户的username放在jwt中
+func GenerateToken(secret string, userid uint) string {
 	// claim - payload部分
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": username,
-		"nbf":      time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix(),
+		"userid": userid,
+		"nbf":    time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix(),
 	})
 
 	tokenString, err := token.SignedString([]byte(secret))
@@ -61,7 +70,12 @@ func JWTAuth(secret string) middleware.Middleware {
 
 				// jwt中的payload部分 - 数据
 				if claims, ok := token.Claims.(jwt.MapClaims); ok {
-					fmt.Printf("claims: %v\n", claims["username"])
+					// fmt.Printf("claims: %v\n", claims["userid"])
+					if u, ok := claims["userid"]; ok {
+						// 鉴权通过后, 把user信息塞入ctx中
+						// jwt 解析时会解析为float64 - 断言为float64以后进行转换
+						ctx = WithContext(ctx, &CurrentUser{UserID: uint(u.(float64))})
+					}
 				} else {
 					return nil, errors.New("invalid token")
 				}
@@ -69,4 +83,15 @@ func JWTAuth(secret string) middleware.Middleware {
 			return handler(ctx, req)
 		}
 	}
+}
+
+// 获取ctx中的user信息
+func FromContext(ctx context.Context) (*CurrentUser, bool) {
+	u, ok := ctx.Value(currentUserKey).(*CurrentUser)
+	return u, ok
+}
+
+// 设置ctx中的user信息
+func WithContext(ctx context.Context, user *CurrentUser) context.Context {
+	return context.WithValue(ctx, currentUserKey, user)
 }

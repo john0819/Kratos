@@ -37,6 +37,7 @@ func (s *RealWorldService) Register(ctx context.Context, req *v1.RegisterRequest
 	}, nil
 }
 
+// 获取当前用户, 通过token信息
 func (s *RealWorldService) GetCurrentUser(ctx context.Context, in *v1.GetCurrentUserRequest) (*v1.UserResponse, error) {
 	return &v1.UserResponse{}, nil
 }
