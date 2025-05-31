@@ -72,7 +72,7 @@ func JWTAuth(secret string) middleware.Middleware {
 				if claims, ok := token.Claims.(jwt.MapClaims); ok {
 					// fmt.Printf("claims: %v\n", claims["userid"])
 					if u, ok := claims["userid"]; ok {
-						// 鉴权通过后, 把user信息塞入ctx中
+						// 鉴权通过后, 把user信息塞入ctx中 - 方便后续获取鉴权用户信息uid唯一性
 						// jwt 解析时会解析为float64 - 断言为float64以后进行转换
 						ctx = WithContext(ctx, &CurrentUser{UserID: uint(u.(float64))})
 					}

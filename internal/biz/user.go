@@ -10,7 +10,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// 请求
+// biz层定义数据结构 - 用户data层和service层
+// 请求 - data层的入参
 type User struct {
 	ID           uint
 	Email        string
@@ -20,7 +21,16 @@ type User struct {
 	PasswordHash string
 }
 
-// 响应
+// 更新用户数据
+type UserUpdate struct {
+	Email    string
+	Password string
+	Username string
+	Bio      string
+	Image    string
+}
+
+// 响应 - data层的响应
 type UserLogin struct {
 	Email    string
 	Username string
@@ -50,6 +60,8 @@ type UserRepo interface {
 	CreateUser(ctx context.Context, user *User) error
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByUsername(ctx context.Context, username string) (*User, error)
+	GetUserByID(ctx context.Context, uid uint) (*User, error)
+	UpdateUser(ctx context.Context, user *User) (*User, error)
 }
 
 type ProfileRepo interface {
@@ -117,5 +129,53 @@ func (uc *UserUsecase) Login(ctx context.Context, email string, password string)
 		Token:    uc.generateToken(u.ID),
 		Bio:      u.Bio,
 		Image:    u.Image,
+	}, nil
+}
+
+func (uc *UserUsecase) GetCurrentUser(ctx context.Context) (*User, error) {
+	// 从ctx中获取用户的uid
+	uidCtx, _ := auth.FromContext(ctx)
+	user, err := uc.ur.GetUserByID(ctx, uidCtx.UserID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+// 优化点: 对所有字段都可以进行更新, 通过uid进行判断, 不需要email做限制
+func (uc *UserUsecase) UpdateUserInfo(ctx context.Context, userUpdate *UserUpdate) (*UserLogin, error) {
+	// 1. 先获取数据库中的内容
+	uidCtx, _ := auth.FromContext(ctx)
+	userFromDB, err := uc.ur.GetUserByID(ctx, uidCtx.UserID)
+	if err != nil {
+		return nil, err
+	}
+	// 2. 通过数据库中的内容修改, 再去update数据库
+	if userUpdate.Email != "" {
+		userFromDB.Email = userUpdate.Email
+	}
+	if userUpdate.Password != "" {
+		userFromDB.PasswordHash = hashPassword(userUpdate.Password)
+	}
+	if userUpdate.Username != "" {
+		userFromDB.Username = userUpdate.Username
+	}
+	if userUpdate.Bio != "" {
+		userFromDB.Bio = userUpdate.Bio
+	}
+	if userUpdate.Image != "" {
+		userFromDB.Image = userUpdate.Image
+	}
+	// 3. 更新数据库
+	userFromDB, err = uc.ur.UpdateUser(ctx, userFromDB)
+	if err != nil {
+		return nil, err
+	}
+	return &UserLogin{
+		Email:    userFromDB.Email,
+		Username: userFromDB.Username,
+		Token:    uc.generateToken(userFromDB.ID),
+		Bio:      userFromDB.Bio,
+		Image:    userFromDB.Image,
 	}, nil
 }
