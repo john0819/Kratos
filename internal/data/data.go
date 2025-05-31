@@ -35,13 +35,13 @@ func NewDB(c *conf.Data) *gorm.DB {
 		panic("failed to connect database")
 	}
 
-	// create tables
+	// create tables - 创建表格的地方
 	InitDB(db)
 
 	return db
 }
 
-// 单独指令开创建表哥
+// 单独指令开创建表格
 func InitDB(db *gorm.DB) {
 	if err := db.AutoMigrate(&User{}); err != nil {
 		panic(err)

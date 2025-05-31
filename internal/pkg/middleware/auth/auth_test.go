@@ -6,6 +6,6 @@ import (
 )
 
 func TestGenerateToken(t *testing.T) {
-	token := GenerateToken("hello", "2233")
+	token := GenerateToken("hello", 123456)
 	fmt.Printf("token: %v\n", token)
 }
