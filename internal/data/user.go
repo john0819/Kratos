@@ -13,10 +13,11 @@ import (
 )
 
 // data层定义数据库中的数据结构
+// mark: 由于username需要用来做profile的几个接口方法参数, 所以要做成唯一的
 type User struct {
 	gorm.Model
 	Email        string `gorm:"size:500;unique"`
-	Username     string `gorm:"size:500"`
+	Username     string `gorm:"size:500;unique"`
 	Bio          string `gorm:"size:1000"`
 	Image        string `gorm:"size:1000"`
 	PasswordHash string `gorm:"size:500"`
@@ -47,6 +48,9 @@ func (r *userRepo) CreateUser(ctx context.Context, user *biz.User) error {
 	if err := r.data.db.Create(&u).Error; err != nil {
 		// 检查错误是否为重复的key
 		if strings.Contains(err.Error(), "Duplicate entry") {
+			if strings.Contains(err.Error(), "username") {
+				return e.NewHTTPError(400, "username", "username already exists")
+			}
 			return e.NewHTTPError(400, "email", "email already exists")
 		}
 		return e.NewHTTPError(500, "database", "database error")
@@ -111,6 +115,9 @@ func (r *userRepo) UpdateUser(ctx context.Context, user *biz.User) (*biz.User, e
 	}).Error
 	if err != nil {
 		if strings.Contains(err.Error(), "Duplicate entry") {
+			if strings.Contains(err.Error(), "username") {
+				return nil, errors.BadRequest("username", "username already exists")
+			}
 			return nil, errors.BadRequest("email", "email already exists")
 		}
 		return nil, err
@@ -137,4 +144,8 @@ func NewProfileRepo(data *Data, logger log.Logger) biz.ProfileRepo {
 		data: data,
 		log:  log.NewHelper(logger),
 	}
+}
+
+func (p *profileRepo) GetProfileByUsername(ctx context.Context, username string) (*biz.ProfileResp, error) {
+	return nil, nil
 }

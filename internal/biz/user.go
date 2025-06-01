@@ -39,6 +39,13 @@ type UserLogin struct {
 	Image    string
 }
 
+type ProfileResp struct {
+	Username  string
+	Bio       string
+	Image     string
+	Following bool
+}
+
 // hash password - 数据库中存储hash加密的pwd
 func hashPassword(pwd string) string {
 	hash, err := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)
@@ -65,6 +72,7 @@ type UserRepo interface {
 }
 
 type ProfileRepo interface {
+	GetProfileByUsername(ctx context.Context, username string) (*ProfileResp, error)
 }
 
 // GreeterUsecase is a Greeter usecase.
@@ -178,4 +186,8 @@ func (uc *UserUsecase) UpdateUserInfo(ctx context.Context, userUpdate *UserUpdat
 		Bio:      userFromDB.Bio,
 		Image:    userFromDB.Image,
 	}, nil
+}
+
+func (uc *UserUsecase) GetProfile(ctx context.Context, username string) (*ProfileResp, error) {
+	return nil, nil
 }
