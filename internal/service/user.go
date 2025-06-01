@@ -77,6 +77,17 @@ func (s *RealWorldService) UpdateUser(ctx context.Context, req *v1.UpdateUserReq
 	}, nil
 }
 
-func (s *RealWorldService) GetProfile(ctx context.Context, in *v1.GetProfileRequest) (*v1.ProfileResponse, error) {
-	return &v1.ProfileResponse{}, nil
+func (s *RealWorldService) GetProfile(ctx context.Context, req *v1.GetProfileRequest) (*v1.ProfileResponse, error) {
+	profile, err := s.ur.GetProfile(ctx, req.Username)
+	if err != nil {
+		return nil, err
+	}
+	return &v1.ProfileResponse{
+		Profile: &v1.ProfileResponse_Profile{
+			Username:  profile.Username,
+			Bio:       profile.Bio,
+			Image:     profile.Image,
+			Following: profile.Following,
+		},
+	}, nil
 }

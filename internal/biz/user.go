@@ -189,5 +189,9 @@ func (uc *UserUsecase) UpdateUserInfo(ctx context.Context, userUpdate *UserUpdat
 }
 
 func (uc *UserUsecase) GetProfile(ctx context.Context, username string) (*ProfileResp, error) {
-	return nil, nil
+	profile, err := uc.pr.GetProfileByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	return profile, nil
 }

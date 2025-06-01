@@ -6,6 +6,7 @@ import (
 
 	"kratos-realworld/internal/biz"
 	e "kratos-realworld/internal/errors"
+	"kratos-realworld/internal/pkg/middleware/auth"
 
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
@@ -21,7 +22,13 @@ type User struct {
 	Bio          string `gorm:"size:1000"`
 	Image        string `gorm:"size:1000"`
 	PasswordHash string `gorm:"size:500"`
-	Following    uint32
+}
+
+// follow表 - 关注id和被关注id
+type Follow struct {
+	gorm.Model
+	FollowerID  uint `gorm:"index"` // 关注者的id - 粉丝
+	FollowingID uint `gorm:"index"` // 被关注者的id - 博主
 }
 
 // 具体实现 biz层的interface
@@ -147,5 +154,29 @@ func NewProfileRepo(data *Data, logger log.Logger) biz.ProfileRepo {
 }
 
 func (p *profileRepo) GetProfileByUsername(ctx context.Context, username string) (*biz.ProfileResp, error) {
-	return nil, nil
+	u := new(User)
+	// 1. 获取username对应的数据
+	if err := p.data.db.Where("username = ?", username).First(u).Error; err != nil {
+		return nil, err
+	}
+	// 2. 查看当前用户是否关注该博主username
+	var following bool
+	currentUser, ok := auth.FromContext(ctx)
+	if ok {
+		var count int64
+		err := p.data.db.Model(&Follow{}).
+			Where("follower_id = ? AND following_id = ?", currentUser.UserID, u.ID).
+			Count(&count).Error
+		if err != nil {
+			return nil, err
+		}
+		following = count > 0
+	}
+
+	return &biz.ProfileResp{
+		Username:  u.Username,
+		Bio:       u.Bio,
+		Image:     u.Image,
+		Following: following,
+	}, nil
 }
