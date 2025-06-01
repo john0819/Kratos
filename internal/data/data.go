@@ -43,7 +43,7 @@ func NewDB(c *conf.Data) *gorm.DB {
 
 // 单独指令开创建表格
 func InitDB(db *gorm.DB) {
-	if err := db.AutoMigrate(&User{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &Follow{}); err != nil {
 		panic(err)
 	}
 }
