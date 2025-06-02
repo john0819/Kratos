@@ -11,6 +11,7 @@ import (
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // data层定义数据库中的数据结构
@@ -27,8 +28,9 @@ type User struct {
 // follow表 - 关注id和被关注id
 type Follow struct {
 	gorm.Model
-	FollowerID  uint `gorm:"index"` // 关注者的id - 粉丝
-	FollowingID uint `gorm:"index"` // 被关注者的id - 博主
+	// 唯一性约束 避免重复关注 fix
+	FollowerID  uint `gorm:"index;uniqueIndex:idx_follow"` // 关注者的id - 粉丝
+	FollowingID uint `gorm:"index;uniqueIndex:idx_follow"` // 被关注者的id - 博主
 }
 
 // 具体实现 biz层的interface
@@ -174,9 +176,37 @@ func (p *profileRepo) GetProfileByUsername(ctx context.Context, username string)
 	}
 
 	return &biz.ProfileResp{
+		ID:        u.ID,
 		Username:  u.Username,
 		Bio:       u.Bio,
 		Image:     u.Image,
 		Following: following,
 	}, nil
+}
+
+func (p *profileRepo) FollowUserByUsername(ctx context.Context, currentUserID uint, followingUserID uint) error {
+	follow := Follow{
+		FollowerID:  currentUserID,
+		FollowingID: followingUserID,
+	}
+
+	// 处理唯一性约束 - 不能重复关注
+	result := p.data.db.Clauses(clause.OnConflict{
+		DoNothing: true,
+	}).Create(&follow)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// fix 重复关注给提示
+	if result.RowsAffected == 0 {
+		return errors.BadRequest("FOLLOW_EXISTS", "already followed")
+	}
+
+	return nil
+}
+
+func (p *profileRepo) UnfollowUserByUsername(ctx context.Context, currentUserID uint, followingUserID uint) error {
+	return nil
 }
