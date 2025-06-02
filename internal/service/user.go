@@ -7,6 +7,17 @@ import (
 	"kratos-realworld/internal/biz"
 )
 
+// 转换结构体
+// profile类型的
+func convertProfile(profile *biz.ProfileResp) *v1.ProfileResponse_Profile {
+	return &v1.ProfileResponse_Profile{
+		Username:  profile.Username,
+		Bio:       profile.Bio,
+		Image:     profile.Image,
+		Following: profile.Following,
+	}
+}
+
 // service层 - handler对api接口进行实现 具体的业务逻辑在业务层/biz 数据操作在数据层/data
 func (s *RealWorldService) Login(ctx context.Context, req *v1.LoginRequest) (*v1.UserResponse, error) {
 	user, err := s.ur.Login(ctx, req.User.Email, req.User.Password)
@@ -83,11 +94,20 @@ func (s *RealWorldService) GetProfile(ctx context.Context, req *v1.GetProfileReq
 		return nil, err
 	}
 	return &v1.ProfileResponse{
-		Profile: &v1.ProfileResponse_Profile{
-			Username:  profile.Username,
-			Bio:       profile.Bio,
-			Image:     profile.Image,
-			Following: profile.Following,
-		},
+		Profile: convertProfile(profile),
 	}, nil
+}
+
+func (s *RealWorldService) FollowUser(ctx context.Context, req *v1.FollowUserRequest) (*v1.ProfileResponse, error) {
+	profile, err := s.ur.FollowUser(ctx, req.Username)
+	if err != nil {
+		return nil, err
+	}
+	return &v1.ProfileResponse{
+		Profile: convertProfile(profile),
+	}, nil
+}
+
+func (s *RealWorldService) UnfollowUser(ctx context.Context, req *v1.UnfollowUserRequest) (*v1.ProfileResponse, error) {
+	return &v1.ProfileResponse{}, nil
 }

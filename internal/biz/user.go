@@ -40,6 +40,7 @@ type UserLogin struct {
 }
 
 type ProfileResp struct {
+	ID        uint
 	Username  string
 	Bio       string
 	Image     string
@@ -73,6 +74,8 @@ type UserRepo interface {
 
 type ProfileRepo interface {
 	GetProfileByUsername(ctx context.Context, username string) (*ProfileResp, error)
+	FollowUserByUsername(ctx context.Context, currentUserID uint, followingUserID uint) error
+	UnfollowUserByUsername(ctx context.Context, currentUserID uint, followingUserID uint) error
 }
 
 // GreeterUsecase is a Greeter usecase.
@@ -194,4 +197,40 @@ func (uc *UserUsecase) GetProfile(ctx context.Context, username string) (*Profil
 		return nil, err
 	}
 	return profile, nil
+}
+
+// 根据鉴权auth知道当前用户, 通过username来关注对应博主
+func (uc *UserUsecase) FollowUser(ctx context.Context, username string) (*ProfileResp, error) {
+	// 1. 获取当前用户uid和关注博主uid
+	currentUser, _ := auth.FromContext(ctx)
+	currentUserID := currentUser.UserID
+
+	followingUserProfile, err := uc.pr.GetProfileByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	followingUserID := followingUserProfile.ID
+
+	// 不允许自己关注自己
+	if currentUserID == followingUserID {
+		return nil, errors.BadRequest("FOLLOW_SELF", "cannot follow yourself")
+	}
+
+	// 2. 进行关注
+	if err := uc.pr.FollowUserByUsername(ctx, currentUserID, followingUserID); err != nil {
+		return nil, err
+	}
+
+	// 3. 返回关注后的用户信息
+	followingUserProfile, err = uc.pr.GetProfileByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+
+	return followingUserProfile, nil
+}
+
+// username来取关博主
+func (uc *UserUsecase) UnfollowUser(ctx context.Context, username string) (*ProfileResp, error) {
+	return nil, nil
 }

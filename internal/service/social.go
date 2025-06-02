@@ -6,14 +6,6 @@ import (
 	v1 "kratos-realworld/api/realworld/v1"
 )
 
-func (s *RealWorldService) FollowUser(ctx context.Context, in *v1.FollowUserRequest) (*v1.ProfileResponse, error) {
-	return &v1.ProfileResponse{}, nil
-}
-
-func (s *RealWorldService) UnfollowUser(ctx context.Context, in *v1.UnfollowUserRequest) (*v1.ProfileResponse, error) {
-	return &v1.ProfileResponse{}, nil
-}
-
 func (s *RealWorldService) ListArticles(ctx context.Context, in *v1.ListArticlesRequest) (*v1.MultipleArticleResponse, error) {
 	return &v1.MultipleArticleResponse{}, nil
 }
