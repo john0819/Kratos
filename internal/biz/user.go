@@ -232,5 +232,24 @@ func (uc *UserUsecase) FollowUser(ctx context.Context, username string) (*Profil
 
 // username来取关博主
 func (uc *UserUsecase) UnfollowUser(ctx context.Context, username string) (*ProfileResp, error) {
-	return nil, nil
+	currentUser, _ := auth.FromContext(ctx)
+	currentUserID := currentUser.UserID
+
+	followingUserProfile, err := uc.pr.GetProfileByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	followingUserID := followingUserProfile.ID
+
+	// 取消关注
+	if err := uc.pr.UnfollowUserByUsername(ctx, currentUserID, followingUserID); err != nil {
+		return nil, err
+	}
+
+	followingProfile, err := uc.pr.GetProfileByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+
+	return followingProfile, nil
 }

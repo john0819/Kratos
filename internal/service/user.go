@@ -109,5 +109,11 @@ func (s *RealWorldService) FollowUser(ctx context.Context, req *v1.FollowUserReq
 }
 
 func (s *RealWorldService) UnfollowUser(ctx context.Context, req *v1.UnfollowUserRequest) (*v1.ProfileResponse, error) {
-	return &v1.ProfileResponse{}, nil
+	profile, err := s.ur.UnfollowUser(ctx, req.Username)
+	if err != nil {
+		return nil, err
+	}
+	return &v1.ProfileResponse{
+		Profile: convertProfile(profile),
+	}, nil
 }
