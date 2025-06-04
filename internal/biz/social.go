@@ -2,12 +2,42 @@ package biz
 
 import (
 	"context"
+	"kratos-realworld/internal/pkg/middleware/auth"
+	"regexp"
+	"strings"
+	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
 )
 
+// slug 转换特殊字符为-
+func slugify(title string) string {
+	re, _ := regexp.Compile(`[^\w]`)
+	return strings.ToLower(re.ReplaceAllString(title, "-"))
+}
+
+// 请求和响应结构体定义
+type Article struct {
+	ID             uint
+	Slug           string // title一般不友好对于url的path来说, 通过slug以 - 来连接解决
+	Title          string
+	Description    string
+	Body           string
+	TagList        []string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Favorited      bool
+	FavoritesCount uint32
+
+	// 作者的uid 从请求获取
+	AuthorID uint
+	// 作者的profile
+	Author *ProfileResp
+}
+
 // social - article / comment / tag
 type ArticleRepo interface {
+	CreateArticle(ctx context.Context, article *Article) (*Article, error)
 }
 
 type CommentRepo interface {
@@ -32,6 +62,26 @@ func NewSocialUsecase(ar ArticleRepo,
 	return &SocialUsecase{ar: ar, cr: cr, tr: tr, log: log.NewHelper(logger)}
 }
 
-func (uc *SocialUsecase) CreateArticle(ctx context.Context) error {
-	return nil
+func (uc *SocialUsecase) CreateArticle(ctx context.Context, a *Article) (*Article, error) {
+	// 请求已经包含title, des, body, tags
+	// biz层获取uid, 转换title为slug
+	currentUser, _ := auth.FromContext(ctx)
+	currentUid := currentUser.UserID
+	a.AuthorID = currentUid
+	a.Slug = slugify(a.Title)
+
+	// data层创建文章
+	article, err := uc.ar.CreateArticle(ctx, a)
+	if err != nil {
+		return nil, err
+	}
+
+	// favorited 和 author是否follow这层传出去
+	article.Favorited = false
+	// 指针需要进行保护
+	if article.Author != nil {
+		article.Author.Following = false
+	}
+
+	return article, nil
 }
