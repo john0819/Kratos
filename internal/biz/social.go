@@ -38,6 +38,9 @@ type Article struct {
 // social - article / comment / tag
 type ArticleRepo interface {
 	CreateArticle(ctx context.Context, article *Article) (*Article, error)
+	GetArticleBySlug(ctx context.Context, slug string) (*Article, error)
+	DeleteArticleBySlug(ctx context.Context, slug string) error
+	UpdateArticle(ctx context.Context, article *Article) (*Article, error)
 }
 
 type CommentRepo interface {
@@ -84,4 +87,20 @@ func (uc *SocialUsecase) CreateArticle(ctx context.Context, a *Article) (*Articl
 	}
 
 	return article, nil
+}
+
+func (uc *SocialUsecase) GetArticle(ctx context.Context, slug string) (*Article, error) {
+	article, err := uc.ar.GetArticleBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+	return article, nil
+}
+
+func (uc *SocialUsecase) DeleteArticle(ctx context.Context, slug string) error {
+	return nil
+}
+
+func (uc *SocialUsecase) UpdateArticle(ctx context.Context, article *Article) (*Article, error) {
+	return nil, nil
 }
