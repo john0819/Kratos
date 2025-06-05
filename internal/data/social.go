@@ -100,7 +100,7 @@ func (ar *articleRepo) CreateArticle(ctx context.Context, article *biz.Article) 
 		}
 	}
 
-	// 以防tag为0的情况 - fix
+	// 以防tag为0的情况（如果tag已经存在, 则不会创建, 所以需要查询） - fix
 	var dbTags []Tag
 	ar.data.db.Where("name IN ?", article.TagList).Find(&dbTags)
 
@@ -125,6 +125,34 @@ func (ar *articleRepo) CreateArticle(ctx context.Context, article *biz.Article) 
 	}
 
 	return convertArticle(a), nil
+}
+
+func (ar *articleRepo) GetArticleBySlug(ctx context.Context, slug string) (*biz.Article, error) {
+	a := Article{}
+	result := ar.data.db.Where("slug = ?", slug).Preload("Author").Preload("Tags").First(&a)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, errors.NotFound("ARTICLE_NOT_FOUND", "article not found")
+		}
+		return nil, result.Error
+	}
+	// favorited count
+	var fc int64
+	article := convertArticle(a)
+	e := ar.data.db.Model(&ArticleFavorite{}).Where("article_id = ?", a.ID).Count(&fc).Error
+	if e != nil {
+		return nil, e
+	}
+	article.FavoritesCount = uint32(fc)
+	return article, nil
+}
+
+func (ar *articleRepo) DeleteArticleBySlug(ctx context.Context, slug string) error {
+	return nil
+}
+
+func (ar *articleRepo) UpdateArticle(ctx context.Context, article *biz.Article) (*biz.Article, error) {
+	return nil, nil
 }
 
 type commentRepo struct {

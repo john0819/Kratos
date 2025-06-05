@@ -34,8 +34,12 @@ func (s *RealWorldService) FeedArticles(ctx context.Context, in *v1.FeedArticles
 	return &v1.MultipleArticleResponse{}, nil
 }
 
-func (s *RealWorldService) GetArticle(ctx context.Context, in *v1.GetArticleRequest) (*v1.SingleArticleResponse, error) {
-	return &v1.SingleArticleResponse{}, nil
+func (s *RealWorldService) GetArticle(ctx context.Context, req *v1.GetArticleRequest) (*v1.SingleArticleResponse, error) {
+	article, err := s.uc.GetArticle(ctx, req.Slug)
+	if err != nil {
+		return nil, err
+	}
+	return convertArticle(article), nil
 }
 
 func (s *RealWorldService) CreateArticle(ctx context.Context, req *v1.CreateArticleRequest) (*v1.SingleArticleResponse, error) {
