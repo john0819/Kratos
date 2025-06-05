@@ -3,17 +3,16 @@ package biz
 import (
 	"context"
 	"kratos-realworld/internal/pkg/middleware/auth"
-	"regexp"
-	"strings"
+	"kratos-realworld/internal/pkg/utils"
 	"time"
 
+	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
-// slug 转换特殊字符为-
-func slugify(title string) string {
-	re, _ := regexp.Compile(`[^\w]`)
-	return strings.ToLower(re.ReplaceAllString(title, "-"))
+// 权限判断
+func verifyAuthor(ctx context.Context, article *Article, currentUid uint) bool {
+	return currentUid == article.AuthorID
 }
 
 // 请求和响应结构体定义
@@ -71,7 +70,7 @@ func (uc *SocialUsecase) CreateArticle(ctx context.Context, a *Article) (*Articl
 	currentUser, _ := auth.FromContext(ctx)
 	currentUid := currentUser.UserID
 	a.AuthorID = currentUid
-	a.Slug = slugify(a.Title)
+	a.Slug = utils.Slugify(a.Title)
 
 	// data层创建文章
 	article, err := uc.ar.CreateArticle(ctx, a)
@@ -98,9 +97,54 @@ func (uc *SocialUsecase) GetArticle(ctx context.Context, slug string) (*Article,
 }
 
 func (uc *SocialUsecase) DeleteArticle(ctx context.Context, slug string) error {
-	return nil
+	// 获取文章
+	uc.log.Infof("delete article by slug: %s", slug)
+	a, err := uc.ar.GetArticleBySlug(ctx, slug)
+	if err != nil {
+		uc.log.Errorf("get article by slug error: %v", err)
+		return err
+	}
+
+	// 只有作者才有权限删除
+	currentUser, _ := auth.FromContext(ctx)
+	currentUid := currentUser.UserID
+	if !verifyAuthor(ctx, a, currentUid) {
+		return errors.Forbidden("FORBIDDEN", "you are not the author of this article")
+	}
+
+	// 删除文章
+	return uc.ar.DeleteArticleBySlug(ctx, slug)
 }
 
 func (uc *SocialUsecase) UpdateArticle(ctx context.Context, article *Article) (*Article, error) {
-	return nil, nil
+	uc.log.Infof("update article by slug: %s", article.Slug)
+	// 获取文章
+	a, err := uc.ar.GetArticleBySlug(ctx, article.Slug)
+	if err != nil {
+		return nil, err
+	}
+
+	// 验证是否为作者
+	currentUser, _ := auth.FromContext(ctx)
+	currentUid := currentUser.UserID
+	if !verifyAuthor(ctx, a, currentUid) {
+		return nil, errors.Forbidden("FORBIDDEN", "you are not the author of this article")
+	}
+
+	// 需要更新的请求
+	updateArticle := &Article{
+		Slug:        article.Slug,
+		Title:       article.Title,
+		Description: article.Description,
+		Body:        article.Body,
+		TagList:     article.TagList,
+	}
+
+	article, err = uc.ar.UpdateArticle(ctx, updateArticle)
+	if err != nil {
+		uc.log.Errorf("update article error: %v", err)
+		return nil, err
+	}
+
+	return article, nil
 }

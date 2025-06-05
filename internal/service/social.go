@@ -55,11 +55,25 @@ func (s *RealWorldService) CreateArticle(ctx context.Context, req *v1.CreateArti
 	return convertArticle(article), nil
 }
 
-func (s *RealWorldService) UpdateArticle(ctx context.Context, in *v1.UpdateArticleRequest) (*v1.SingleArticleResponse, error) {
-	return &v1.SingleArticleResponse{}, nil
+func (s *RealWorldService) UpdateArticle(ctx context.Context, req *v1.UpdateArticleRequest) (*v1.SingleArticleResponse, error) {
+	article, err := s.uc.UpdateArticle(ctx, &biz.Article{
+		Slug:        req.Slug,
+		Title:       req.Article.Title,
+		Description: req.Article.Description,
+		Body:        req.Article.Body,
+		TagList:     req.Article.TagList,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return convertArticle(article), nil
 }
 
-func (s *RealWorldService) DeleteArticle(ctx context.Context, in *v1.DeleteArticleRequest) (*v1.DeleteArticleResponse, error) {
+func (s *RealWorldService) DeleteArticle(ctx context.Context, req *v1.DeleteArticleRequest) (*v1.DeleteArticleResponse, error) {
+	err := s.uc.DeleteArticle(ctx, req.Slug)
+	if err != nil {
+		return nil, err
+	}
 	return &v1.DeleteArticleResponse{}, nil
 }
 
