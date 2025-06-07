@@ -34,6 +34,8 @@ type Article struct {
 	Author *ProfileResp
 }
 
+type Tag string
+
 // social - article / comment / tag
 type ArticleRepo interface {
 	CreateArticle(ctx context.Context, article *Article) (*Article, error)
@@ -46,6 +48,7 @@ type CommentRepo interface {
 }
 
 type TagRepo interface {
+	GetTags(ctx context.Context) ([]Tag, error)
 }
 
 // GreeterUsecase is a Greeter usecase.
@@ -147,4 +150,8 @@ func (uc *SocialUsecase) UpdateArticle(ctx context.Context, article *Article) (*
 	}
 
 	return article, nil
+}
+
+func (uc *SocialUsecase) GetTags(ctx context.Context) ([]Tag, error) {
+	return uc.tr.GetTags(ctx)
 }

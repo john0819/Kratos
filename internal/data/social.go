@@ -224,3 +224,17 @@ func NewTagRepo(data *Data, logger log.Logger) biz.TagRepo {
 		log:  log.NewHelper(logger),
 	}
 }
+
+func (tr *tagRepo) GetTags(ctx context.Context) ([]biz.Tag, error) {
+	var tags []Tag
+	err := tr.data.db.Find(&tags).Error
+	if err != nil {
+		return nil, err
+	}
+	// 转换
+	tagList := make([]biz.Tag, len(tags))
+	for i, tag := range tags {
+		tagList[i] = biz.Tag(tag.Name)
+	}
+	return tagList, nil
+}
