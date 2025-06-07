@@ -89,12 +89,20 @@ func (s *RealWorldService) DeleteComment(ctx context.Context, in *v1.DeleteComme
 	return &v1.DeleteCommentResponse{}, nil
 }
 
-func (s *RealWorldService) FavoriteArticle(ctx context.Context, in *v1.FavoriteArticleRequest) (*v1.SingleArticleResponse, error) {
-	return &v1.SingleArticleResponse{}, nil
+func (s *RealWorldService) FavoriteArticle(ctx context.Context, req *v1.FavoriteArticleRequest) (*v1.SingleArticleResponse, error) {
+	article, err := s.uc.FavoriteArticle(ctx, req.Slug)
+	if err != nil {
+		return nil, err
+	}
+	return convertArticle(article), nil
 }
 
-func (s *RealWorldService) UnfavoriteArticle(ctx context.Context, in *v1.UnfavoriteArticleRequest) (*v1.SingleArticleResponse, error) {
-	return &v1.SingleArticleResponse{}, nil
+func (s *RealWorldService) UnfavoriteArticle(ctx context.Context, req *v1.UnfavoriteArticleRequest) (*v1.SingleArticleResponse, error) {
+	article, err := s.uc.UnfavoriteArticle(ctx, req.Slug)
+	if err != nil {
+		return nil, err
+	}
+	return convertArticle(article), nil
 }
 
 func (s *RealWorldService) GetTags(ctx context.Context, in *v1.GetTagsRequest) (*v1.TagsListResponse, error) {

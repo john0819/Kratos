@@ -42,6 +42,11 @@ type ArticleRepo interface {
 	GetArticleBySlug(ctx context.Context, slug string) (*Article, error)
 	DeleteArticleBySlug(ctx context.Context, slug string) error
 	UpdateArticle(ctx context.Context, article *Article) (*Article, error)
+	GetArticleByAid(ctx context.Context, aid uint) (*Article, error)
+
+	FavoriteArticle(ctx context.Context, aid uint, uid uint) error
+	UnfavoriteArticle(ctx context.Context, aid uint, uid uint) error
+	GetIsFavorited(ctx context.Context, aids []uint, uid uint) (map[uint]bool, error)
 }
 
 type CommentRepo interface {
@@ -92,6 +97,7 @@ func (uc *SocialUsecase) CreateArticle(ctx context.Context, a *Article) (*Articl
 }
 
 func (uc *SocialUsecase) GetArticle(ctx context.Context, slug string) (*Article, error) {
+	uc.log.Infof("get article by slug: %s", slug)
 	article, err := uc.ar.GetArticleBySlug(ctx, slug)
 	if err != nil {
 		return nil, err
@@ -149,7 +155,74 @@ func (uc *SocialUsecase) UpdateArticle(ctx context.Context, article *Article) (*
 		return nil, err
 	}
 
+	// 获取是否收藏
+	favoriteMap, err := uc.ar.GetIsFavorited(ctx, []uint{article.ID}, currentUid)
+	if err != nil {
+		return nil, err
+	}
+	article.Favorited = favoriteMap[article.ID]
+
 	return article, nil
+}
+
+func (uc *SocialUsecase) FavoriteArticle(ctx context.Context, slug string) (*Article, error) {
+	uc.log.Infof("favorite article by slug: %s", slug)
+	// 获取文章
+	a, err := uc.ar.GetArticleBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	// 获取用户
+	currentUser, _ := auth.FromContext(ctx)
+	currentUid := currentUser.UserID
+
+	// 添加喜欢
+	err = uc.ar.FavoriteArticle(ctx, a.ID, currentUid)
+	if err != nil {
+		return nil, err
+	}
+
+	// 更新文章信息
+	a, err = uc.ar.GetArticleByAid(ctx, a.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 获取是否收藏
+	favoriteMap, err := uc.ar.GetIsFavorited(ctx, []uint{a.ID}, currentUid)
+	if err != nil {
+		return nil, err
+	}
+	a.Favorited = favoriteMap[a.ID]
+
+	return a, nil
+}
+
+func (uc *SocialUsecase) UnfavoriteArticle(ctx context.Context, slug string) (*Article, error) {
+	uc.log.Infof("unfavorite article by slug: %s", slug)
+	// 获取文章
+	a, err := uc.ar.GetArticleBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	// 获取用户
+	currentUser, _ := auth.FromContext(ctx)
+	currentUid := currentUser.UserID
+
+	err = uc.ar.UnfavoriteArticle(ctx, a.ID, currentUid)
+	if err != nil {
+		return nil, err
+	}
+
+	// 更新文章信息
+	a, err = uc.ar.GetArticleByAid(ctx, a.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return a, nil
 }
 
 func (uc *SocialUsecase) GetTags(ctx context.Context) ([]Tag, error) {

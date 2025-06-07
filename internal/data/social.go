@@ -40,6 +40,18 @@ func convertArticle(a Article) *biz.Article {
 	}
 }
 
+// 收藏数量
+func countFavorites(db *gorm.DB, aid uint) (uint32, error) {
+	var count int64
+	e := db.Model(&ArticleFavorite{}).Where("article_id = ?", aid).Count(&count).Error
+	if e != nil {
+		return 0, e
+	}
+	return uint32(count), nil
+}
+
+// 是否收藏
+
 // 定义数据库表结构
 
 // 文章表
@@ -67,8 +79,8 @@ type Tag struct {
 // 文章和用户的关联表
 type ArticleFavorite struct {
 	gorm.Model
-	UserID    uint
-	ArticleID uint `gorm:"index;constraint:OnDelete:CASCADE;"`
+	UserID    uint `gorm:"index:idx_user_article,unique"`
+	ArticleID uint `gorm:"index:idx_user_article,unique;constraint:OnDelete:CASCADE;"`
 }
 
 // 文章和tag的关联表
@@ -139,15 +151,33 @@ func (ar *articleRepo) GetArticleBySlug(ctx context.Context, slug string) (*biz.
 		return nil, result.Error
 	}
 
-	// favorited count
-	var fc int64
 	article := convertArticle(a)
-	e := ar.data.db.Model(&ArticleFavorite{}).Where("article_id = ?", a.ID).Count(&fc).Error
-	if e != nil {
-		return nil, e
+	// favorited count
+	fc, err := countFavorites(ar.data.db, a.ID)
+	if err != nil {
+		return nil, err
 	}
-	article.FavoritesCount = uint32(fc)
+	article.FavoritesCount = fc
 	return article, nil
+}
+
+func (ar *articleRepo) GetArticleByAid(ctx context.Context, aid uint) (*biz.Article, error) {
+	a := Article{}
+	err := ar.data.db.Model(&Article{}).Where("id = ?", aid).Preload("Author").Preload("Tags").Preload("Favorites").First(&a).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.NotFound("ARTICLE_NOT_FOUND", "article not found")
+		}
+		return nil, err
+	}
+	// 收藏数量
+	fc, err := countFavorites(ar.data.db, a.ID)
+	if err != nil {
+		return nil, err
+	}
+	a.FavoritesCount = fc
+
+	return convertArticle(a), nil
 }
 
 func (ar *articleRepo) DeleteArticleBySlug(ctx context.Context, slug string) error {
@@ -199,6 +229,102 @@ func (ar *articleRepo) UpdateArticle(ctx context.Context, article *biz.Article) 
 	}
 
 	return convertArticle(dbArticle), nil
+}
+
+// mark 这个接口既能收藏又能取消收藏
+func (ar *articleRepo) FavoriteArticle(ctx context.Context, aid uint, uid uint) error {
+	af := ArticleFavorite{
+		UserID:    uid,
+		ArticleID: aid,
+	}
+
+	// 获取文章
+	a := Article{}
+	err := ar.data.db.Model(&Article{}).Where("id = ?", aid).First(&a).Error
+	if err != nil {
+		return err
+	}
+
+	// 添加喜欢
+	// 先查询
+	result := ar.data.db.Where(&af).First(&ArticleFavorite{})
+	// 没收藏过则收藏
+	if result.RowsAffected == 0 {
+		ar.log.Infof("favorite article by article_id: %d", aid)
+		err := ar.data.db.Create(&af).Error
+		if err != nil {
+			return err
+		}
+	} else {
+		// 收藏过则取消收藏
+		// 采用物理删除
+		ar.log.Infof("unfavorite article by article_id: %d", aid)
+		err := ar.data.db.Unscoped().Where(&af).Delete(&ArticleFavorite{}).Error
+		if err != nil {
+			return err
+		}
+	}
+
+	// todo: article里的收藏数量可以删除这个字段, 直接通过article_favorites表来计算
+	fc, err := countFavorites(ar.data.db, aid)
+	if err != nil {
+		return err
+	}
+	a.FavoritesCount = fc
+	ar.log.Infof("收藏数量: %d", a.FavoritesCount)
+
+	// 更新文章
+	err = ar.data.db.Model(&Article{}).Where("id = ?", aid).UpdateColumn("favorites_count", a.FavoritesCount).Error
+	return err
+}
+
+// 只做取消收藏
+func (ar *articleRepo) UnfavoriteArticle(ctx context.Context, aid uint, uid uint) error {
+	af := ArticleFavorite{
+		UserID:    uid,
+		ArticleID: aid,
+	}
+
+	a := Article{}
+	err := ar.data.db.Model(&Article{}).Where("id = ?", aid).First(&a).Error
+	if err != nil {
+		return nil
+	}
+
+	result := ar.data.db.Unscoped().Where(&af).Delete(&ArticleFavorite{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.NotFound("FAVORITE_NOT_FOUND", "you do notfavorite this article")
+	}
+
+	fc, err := countFavorites(ar.data.db, aid)
+	if err != nil {
+		return err
+	}
+	a.FavoritesCount = fc
+	err = ar.data.db.Model(&Article{}).Where("id = ?", aid).UpdateColumn("favorites_count", a.FavoritesCount).Error
+	return err
+}
+
+// 一个uid与多个aid之间的收藏关系
+func (ar *articleRepo) GetIsFavorited(ctx context.Context, aids []uint, uid uint) (map[uint]bool, error) {
+	var favorites []ArticleFavorite
+	err := ar.data.db.Model(&ArticleFavorite{}).Where("user_id = ? AND article_id IN ?", uid, aids).Find(&favorites).Error
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[uint]bool)
+	for _, aid := range aids {
+		result[aid] = false
+	}
+
+	for _, favorite := range favorites {
+		result[favorite.ArticleID] = true
+	}
+
+	return result, nil
 }
 
 type commentRepo struct {
