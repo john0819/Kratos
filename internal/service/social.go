@@ -98,5 +98,15 @@ func (s *RealWorldService) UnfavoriteArticle(ctx context.Context, in *v1.Unfavor
 }
 
 func (s *RealWorldService) GetTags(ctx context.Context, in *v1.GetTagsRequest) (*v1.TagsListResponse, error) {
-	return &v1.TagsListResponse{}, nil
+	tags, err := s.uc.GetTags(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tagList := make([]string, len(tags))
+	for i, tag := range tags {
+		tagList[i] = string(tag)
+	}
+	return &v1.TagsListResponse{
+		Tags: tagList,
+	}, nil
 }

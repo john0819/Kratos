@@ -21,6 +21,7 @@ func NewSkipRoutersMatcher() selector.MatchFunc {
 	skipRouters["/realworld.v1.RealWorld/Login"] = struct{}{}
 	skipRouters["/realworld.v1.RealWorld/Register"] = struct{}{}
 	skipRouters["/realworld.v1.RealWorld/GetArticle"] = struct{}{}
+	skipRouters["/realworld.v1.RealWorld/GetTags"] = struct{}{}
 	return func(ctx context.Context, operation string) bool {
 		if _, ok := skipRouters[operation]; ok {
 			return false
