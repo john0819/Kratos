@@ -50,8 +50,6 @@ func countFavorites(db *gorm.DB, aid uint) (uint32, error) {
 	return uint32(count), nil
 }
 
-// 是否收藏
-
 // 定义数据库表结构
 
 // 文章表
@@ -66,6 +64,17 @@ type Article struct {
 	Author         User // 关联user表
 	FavoritesCount uint32
 	Favorites      []ArticleFavorite `gorm:"constraint:OnDelete:CASCADE;"`
+	Comments       []Comment         `gorm:"constraint:OnDelete:CASCADE;"`
+}
+
+// comment表
+type Comment struct {
+	gorm.Model
+	ArticleID uint
+	Article   Article `gorm:"constraint:OnDelete:CASCADE;"`
+	Body      string
+	AuthorID  uint // 关联user表
+	Author    User
 }
 
 // tag表
