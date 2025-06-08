@@ -34,6 +34,20 @@ type Article struct {
 	Author *ProfileResp
 }
 
+type Comment struct {
+	ID        uint
+	Body      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Author    *ProfileResp
+
+	// 传给data层的时候, 需要将authorID和articleID传给data层 - 方便查询
+	// author
+	AuthorID uint
+	// article
+	ArticleID uint
+}
+
 type Tag string
 
 // social - article / comment / tag
@@ -50,6 +64,9 @@ type ArticleRepo interface {
 }
 
 type CommentRepo interface {
+	AddComment(ctx context.Context, c *Comment) (*Comment, error)
+	DeleteCommentByID(ctx context.Context, id uint) error
+	GetCommentsByID(ctx context.Context, cid uint) ([]*Comment, error)
 }
 
 type TagRepo interface {
@@ -223,6 +240,61 @@ func (uc *SocialUsecase) UnfavoriteArticle(ctx context.Context, slug string) (*A
 	}
 
 	return a, nil
+}
+
+func (uc *SocialUsecase) AddComment(ctx context.Context, slug string, c *Comment) (*Comment, error) {
+	uc.log.Infof("add comment by slug: %s", slug)
+
+	// 评论用户的id
+	currentUser, _ := auth.FromContext(ctx)
+	currentUid := currentUser.UserID
+
+	// 评论的文章id
+	a, err := uc.ar.GetArticleBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	c.ArticleID = a.ID
+	c.AuthorID = currentUid
+
+	comment, err := uc.cr.AddComment(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+	return comment, nil
+}
+
+func (uc *SocialUsecase) DeleteComment(ctx context.Context, slug string, id uint) error {
+	uc.log.Infof("delete comment by slug: %s, id: %d", slug, id)
+
+	// 只有作者才能删除
+	currentUser, _ := auth.FromContext(ctx)
+	currentUid := currentUser.UserID
+	a, err := uc.ar.GetArticleBySlug(ctx, slug)
+	if err != nil {
+		return err
+	}
+	if !verifyAuthor(ctx, a, currentUid) {
+		return errors.Forbidden("FORBIDDEN", "you are not the author of this article")
+	}
+
+	err = uc.cr.DeleteCommentByID(ctx, id)
+	return err
+}
+
+func (uc *SocialUsecase) GetComments(ctx context.Context, slug string) ([]*Comment, error) {
+	uc.log.Infof("get comments by slug: %s", slug)
+	a, err := uc.ar.GetArticleBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	comments, err := uc.cr.GetCommentsByID(ctx, a.ID)
+	if err != nil {
+		return nil, err
+	}
+	return comments, nil
 }
 
 func (uc *SocialUsecase) GetTags(ctx context.Context) ([]Tag, error) {

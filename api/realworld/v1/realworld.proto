@@ -332,43 +332,25 @@ message MultipleArticleResponse {
 }
 
 message SingleCommentResponse {
+  Comment comment = 1;
+}
 
-    message Author {
-        string username = 1;
-        string bio = 2;
-        string image = 3;
-        bool following = 4;
-    }
-
-    message Comment {
-        uint32 id = 1;
-        google.protobuf.Timestamp created_at = 2;
-        google.protobuf.Timestamp updated_at = 3;
-        string body = 4;
-        Author author = 5;
-    }
-
-    Comment comment = 1;
+message Comment {
+  uint32 id = 1;
+  google.protobuf.Timestamp createdAt = 2;
+  google.protobuf.Timestamp updatedAt = 3;
+  string body = 4;
+  Profile author = 5;
+}
+message Profile {
+  string username = 1;
+  string bio = 2;
+  string image = 3;
+  bool following = 4;
 }
 
 message MultipleCommentResponse {
-
-    message Author {
-        string username = 1;
-        string bio = 2;
-        string image = 3;
-        bool following = 4;
-    }
-
-    message Comments {
-        uint32 id = 1;
-        google.protobuf.Timestamp created_at = 2;
-        google.protobuf.Timestamp updated_at = 3;
-        string body = 4;
-        Author author = 5;
-    }
-
-    repeated Comments comments = 1;
+    repeated Comment comments = 1;
 }
 
 message TagsListResponse {

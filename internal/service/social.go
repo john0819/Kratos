@@ -26,6 +26,16 @@ func convertArticle(a *biz.Article) *v1.SingleArticleResponse {
 	}
 }
 
+func convertComment(c *biz.Comment) *v1.Comment {
+	return &v1.Comment{
+		Id:        uint32(c.ID),
+		Body:      c.Body,
+		CreatedAt: timestamppb.New(c.CreatedAt),
+		UpdatedAt: timestamppb.New(c.UpdatedAt),
+		Author:    (*v1.Profile)(convertProfile(c.Author)),
+	}
+}
+
 func (s *RealWorldService) ListArticles(ctx context.Context, in *v1.ListArticlesRequest) (*v1.MultipleArticleResponse, error) {
 	return &v1.MultipleArticleResponse{}, nil
 }
@@ -77,16 +87,41 @@ func (s *RealWorldService) DeleteArticle(ctx context.Context, req *v1.DeleteArti
 	return &v1.DeleteArticleResponse{}, nil
 }
 
-func (s *RealWorldService) AddComment(ctx context.Context, in *v1.AddCommentRequest) (*v1.SingleCommentResponse, error) {
-	return &v1.SingleCommentResponse{}, nil
+func (s *RealWorldService) AddComment(ctx context.Context, req *v1.AddCommentRequest) (*v1.SingleCommentResponse, error) {
+	comment, err := s.uc.AddComment(ctx, req.Slug, &biz.Comment{
+		Body: req.Comment.Body,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &v1.SingleCommentResponse{
+		Comment: convertComment(comment),
+	}, nil
 }
 
-func (s *RealWorldService) GetComments(ctx context.Context, in *v1.GetCommentsRequest) (*v1.MultipleCommentResponse, error) {
-	return &v1.MultipleCommentResponse{}, nil
+func (s *RealWorldService) GetComments(ctx context.Context, req *v1.GetCommentsRequest) (*v1.MultipleCommentResponse, error) {
+	comments, err := s.uc.GetComments(ctx, req.Slug)
+	if err != nil {
+		return nil, err
+	}
+	// 转换
+	commentList := make([]*v1.Comment, len(comments))
+	for i, comment := range comments {
+		commentList[i] = convertComment(comment)
+	}
+	return &v1.MultipleCommentResponse{
+		Comments: commentList,
+	}, nil
 }
 
-func (s *RealWorldService) DeleteComment(ctx context.Context, in *v1.DeleteCommentRequest) (*v1.DeleteCommentResponse, error) {
-	return &v1.DeleteCommentResponse{}, nil
+func (s *RealWorldService) DeleteComment(ctx context.Context, req *v1.DeleteCommentRequest) (*v1.DeleteCommentResponse, error) {
+	err := s.uc.DeleteComment(ctx, req.Slug, uint(req.Id))
+	if err != nil {
+		return nil, err
+	}
+	return &v1.DeleteCommentResponse{
+		Message: "delete comment success",
+	}, nil
 }
 
 func (s *RealWorldService) FavoriteArticle(ctx context.Context, req *v1.FavoriteArticleRequest) (*v1.SingleArticleResponse, error) {

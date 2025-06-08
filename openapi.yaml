@@ -392,6 +392,22 @@ components:
             properties:
                 body:
                     type: string
+        realworld.v1.Comment:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: uint32
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+                body:
+                    type: string
+                author:
+                    $ref: '#/components/schemas/realworld.v1.Profile'
         realworld.v1.CreateArticleRequest:
             type: object
             properties:
@@ -495,8 +511,8 @@ components:
                 comments:
                     type: array
                     items:
-                        $ref: '#/components/schemas/realworld.v1.MultipleCommentResponse_Comments'
-        realworld.v1.MultipleCommentResponse_Author:
+                        $ref: '#/components/schemas/realworld.v1.Comment'
+        realworld.v1.Profile:
             type: object
             properties:
                 username:
@@ -507,22 +523,6 @@ components:
                     type: string
                 following:
                     type: boolean
-        realworld.v1.MultipleCommentResponse_Comments:
-            type: object
-            properties:
-                id:
-                    type: integer
-                    format: uint32
-                createdAt:
-                    type: string
-                    format: date-time
-                updatedAt:
-                    type: string
-                    format: date-time
-                body:
-                    type: string
-                author:
-                    $ref: '#/components/schemas/realworld.v1.MultipleCommentResponse_Author'
         realworld.v1.ProfileResponse:
             type: object
             properties:
@@ -601,34 +601,7 @@ components:
             type: object
             properties:
                 comment:
-                    $ref: '#/components/schemas/realworld.v1.SingleCommentResponse_Comment'
-        realworld.v1.SingleCommentResponse_Author:
-            type: object
-            properties:
-                username:
-                    type: string
-                bio:
-                    type: string
-                image:
-                    type: string
-                following:
-                    type: boolean
-        realworld.v1.SingleCommentResponse_Comment:
-            type: object
-            properties:
-                id:
-                    type: integer
-                    format: uint32
-                createdAt:
-                    type: string
-                    format: date-time
-                updatedAt:
-                    type: string
-                    format: date-time
-                body:
-                    type: string
-                author:
-                    $ref: '#/components/schemas/realworld.v1.SingleCommentResponse_Author'
+                    $ref: '#/components/schemas/realworld.v1.Comment'
         realworld.v1.TagsListResponse:
             type: object
             properties:

@@ -17,7 +17,8 @@ const (
 
 // 可选鉴权接口
 var optionalAuthRouters = map[string]struct{}{
-	"/realworld.v1.RealWorld/GetProfile": {},
+	"/realworld.v1.RealWorld/GetProfile":  {},
+	"/realworld.v1.RealWorld/GetComments": {},
 }
 
 // 在context里面存储用户信息-uid

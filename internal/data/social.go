@@ -70,7 +70,7 @@ type Article struct {
 // comment表
 type Comment struct {
 	gorm.Model
-	ArticleID uint
+	ArticleID uint    // 关联article表
 	Article   Article `gorm:"constraint:OnDelete:CASCADE;"`
 	Body      string
 	AuthorID  uint // 关联user表
@@ -346,6 +346,74 @@ func NewCommentRepo(data *Data, logger log.Logger) biz.CommentRepo {
 		data: data,
 		log:  log.NewHelper(logger),
 	}
+}
+
+func (cr *commentRepo) AddComment(ctx context.Context, c *biz.Comment) (*biz.Comment, error) {
+	comment := Comment{
+		ArticleID: c.ArticleID,
+		AuthorID:  c.AuthorID,
+		Body:      c.Body,
+	}
+
+	result := cr.data.db.Create(&comment)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	// 评论人的用户信息
+	var user User
+	if err := cr.data.db.Model(&User{}).Where("id = ?", c.AuthorID).First(&user).Error; err != nil {
+		return nil, err
+	}
+	profile := &biz.ProfileResp{
+		Username: user.Username,
+		Bio:      user.Bio,
+		Image:    user.Image,
+	}
+
+	return &biz.Comment{
+		ID:        comment.ID,
+		Body:      comment.Body,
+		CreatedAt: comment.CreatedAt,
+		UpdatedAt: comment.UpdatedAt,
+		Author:    profile,
+	}, nil
+}
+
+func (cr *commentRepo) DeleteCommentByID(ctx context.Context, id uint) error {
+	result := cr.data.db.Delete(&Comment{}, "id = ?", id)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.NotFound("COMMENT_NOT_FOUND", "comment not found")
+	}
+	return nil
+}
+
+func (cr *commentRepo) GetCommentsByID(ctx context.Context, cid uint) ([]*biz.Comment, error) {
+	var comments []Comment
+	result := cr.data.db.Model(&Comment{}).Where("article_id = ?", cid).Preload("Author").Find(&comments)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	// 封装成biz.Comment
+	commentList := make([]*biz.Comment, len(comments))
+	for i, comment := range comments {
+		commentList[i] = &biz.Comment{
+			ID:        comment.ID,
+			Body:      comment.Body,
+			CreatedAt: comment.CreatedAt,
+			UpdatedAt: comment.UpdatedAt,
+			Author: &biz.ProfileResp{
+				Username: comment.Author.Username,
+				Bio:      comment.Author.Bio,
+				Image:    comment.Author.Image,
+			},
+		}
+	}
+	// todo: 登录用户和评论用户之间的follow关系
+	return commentList, nil
 }
 
 type tagRepo struct {
