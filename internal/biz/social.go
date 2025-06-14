@@ -15,6 +15,44 @@ func verifyAuthor(ctx context.Context, article *Article, currentUid uint) bool {
 	return currentUid == article.AuthorID
 }
 
+// 关于当前用户与文章之间的关系 收藏关系
+func (uc *SocialUsecase) getArticleFavoritedByUid(ctx context.Context, articles []*Article, currentUid uint) ([]*Article, error) {
+	aids := make([]uint, 0)
+	for _, article := range articles {
+		aids = append(aids, article.ID)
+	}
+	favoriteMap, err := uc.ar.GetIsFavorited(ctx, aids, currentUid)
+	if err != nil {
+		return nil, err
+	}
+	for _, article := range articles {
+		article.Favorited = favoriteMap[article.ID]
+	}
+	return articles, nil
+}
+
+// 关于当前用户与文章作者之间的 关注关系
+func (uc *SocialUsecase) getArticleAuthorFollowedByUid(ctx context.Context, articles []*Article, currentUid uint) ([]*Article, error) {
+	uc.log.Infof("关于当前用户与文章作者之间的 关注关系")
+	authorIds := make([]uint, 0)
+	for _, article := range articles {
+		authorIds = append(authorIds, article.AuthorID)
+	}
+
+	// 批量查询所有作者的关注状态
+	followingMap, err := uc.ar.GetOneIsFollowingAnother(ctx, currentUid, authorIds)
+	if err != nil {
+		return nil, err
+	}
+
+	// 将关注状态映射到每篇文章
+	for _, article := range articles {
+		article.Author.Following = followingMap[article.AuthorID]
+	}
+
+	return articles, nil
+}
+
 // 请求和响应结构体定义
 type Article struct {
 	ID             uint
@@ -63,6 +101,7 @@ type ArticleRepo interface {
 	GetIsFavorited(ctx context.Context, aids []uint, uid uint) (map[uint]bool, error)
 
 	ListArticlesByOptions(ctx context.Context, options *ListOptions) ([]*Article, error)
+	GetOneIsFollowingAnother(ctx context.Context, uid_1 uint, uids []uint) (map[uint]bool, error)
 }
 
 type CommentRepo interface {
@@ -256,6 +295,50 @@ func (uc *SocialUsecase) ListArticles(ctx context.Context, opts ...ListOption) (
 		options.CurrentUid = currentUid
 	}
 	articles, err := uc.ar.ListArticlesByOptions(ctx, options)
+	if err != nil {
+		return nil, err
+	}
+
+	// 如果有鉴权登录, 查询aid和uid的收藏关系 + uid和authorId的follow关系
+	if currentUser != nil {
+		currentUid := currentUser.UserID
+		articles, err = uc.getArticleFavoritedByUid(ctx, articles, currentUid)
+		if err != nil {
+			return nil, err
+		}
+		articles, err = uc.getArticleAuthorFollowedByUid(ctx, articles, currentUid)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return articles, nil
+}
+
+// 查询文章 - 登录用户与其关注用户的关系
+func (uc *SocialUsecase) FeedArticles(ctx context.Context, opts ...ListOption) ([]*Article, error) {
+	uc.log.Info("feed artile by opts: %v", opts)
+	options := NewListOptions(opts...)
+	currentUser, _ := auth.FromContext(ctx)
+	var currentUid uint
+	if currentUser != nil {
+		currentUid = currentUser.UserID
+		options.CurrentUid = currentUid
+	}
+	uc.log.Infof("feed articles by uid: %v", options.CurrentUid)
+	articles, err := uc.ar.ListArticlesByOptions(ctx, options)
+	if err != nil {
+		return nil, err
+	}
+
+	// uid和aid的收藏关系
+	articles, err = uc.getArticleFavoritedByUid(ctx, articles, currentUid)
+	if err != nil {
+		return nil, err
+	}
+
+	// uid和authorId的follow关系
+	articles, err = uc.getArticleAuthorFollowedByUid(ctx, articles, currentUid)
 	if err != nil {
 		return nil, err
 	}

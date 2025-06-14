@@ -340,8 +340,9 @@ func (ar *articleRepo) GetIsFavorited(ctx context.Context, aids []uint, uid uint
 func (ar *articleRepo) ListArticlesByOptions(ctx context.Context, options *biz.ListOptions) ([]*biz.Article, error) {
 	db := ar.data.db.Model(&Article{}).Preload("Author").Preload("Tags").Preload("Favorites")
 
-	// 只返回当前用户相关的文章
+	// 返回当前用户关注的用户文章
 	if options.CurrentUid > 0 && options.Tag == "" && options.Author == "" && options.FavoritedBy == "" {
+		ar.log.Infof("查询用户关注的用户文章: %v", options.CurrentUid)
 		db = db.Joins("JOIN follows ON follows.following_id = articles.author_id").
 			Where("follows.follower_id = ?", options.CurrentUid)
 	} else {
@@ -385,6 +386,35 @@ func (ar *articleRepo) ListArticlesByOptions(ctx context.Context, options *biz.L
 		articleList[i] = convertArticle(article)
 	}
 	return articleList, nil
+}
+
+// 两个用户之间的follow关系, uid_1是否关注uids
+func (ar *articleRepo) GetOneIsFollowingAnother(ctx context.Context, uid_1 uint, uids []uint) (map[uint]bool, error) {
+	if len(uids) == 0 {
+		return make(map[uint]bool), nil
+	}
+
+	var follows []Follow
+	if err := ar.data.db.Model(&Follow{}).
+		Where("follower_id = ? AND following_id IN ?", uid_1, uids).
+		Find(&follows).Error; err != nil {
+		return nil, err
+	}
+
+	// Create a map of following status
+	followingMap := make(map[uint]bool)
+	for _, follow := range follows {
+		followingMap[follow.FollowingID] = true
+	}
+
+	// Initialize all requested uids to false
+	for _, uid := range uids {
+		if _, exists := followingMap[uid]; !exists {
+			followingMap[uid] = false
+		}
+	}
+
+	return followingMap, nil
 }
 
 type commentRepo struct {

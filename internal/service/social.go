@@ -70,8 +70,27 @@ func (s *RealWorldService) ListArticles(ctx context.Context, req *v1.ListArticle
 	}, nil
 }
 
-func (s *RealWorldService) FeedArticles(ctx context.Context, in *v1.FeedArticlesRequest) (*v1.MultipleArticleResponse, error) {
-	return &v1.MultipleArticleResponse{}, nil
+func (s *RealWorldService) FeedArticles(ctx context.Context, req *v1.FeedArticlesRequest) (*v1.MultipleArticleResponse, error) {
+	var opts []biz.ListOption
+	if req.Limit > 0 {
+		opts = append(opts, biz.WithLimit(int(req.Limit)))
+	}
+	if req.Offset > 0 {
+		opts = append(opts, biz.WithOffset(int(req.Offset)))
+	}
+	a, err := s.uc.FeedArticles(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	articles := make([]*v1.Article, 0)
+	for _, article := range a {
+		articles = append(articles, convertArticle(article).Article)
+	}
+	return &v1.MultipleArticleResponse{
+		Articles:      articles,
+		ArticlesCount: uint32(len(articles)),
+	}, nil
 }
 
 func (s *RealWorldService) GetArticle(ctx context.Context, req *v1.GetArticleRequest) (*v1.SingleArticleResponse, error) {
