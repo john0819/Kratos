@@ -281,54 +281,48 @@ message ProfileResponse {
   Profile profile = 1;
 }
 
+message Article {
+  string slug = 1;
+  string title = 2;
+  string description = 3;
+  string body = 4;
+  repeated string tagList = 5;
+  google.protobuf.Timestamp createdAt = 6;
+  google.protobuf.Timestamp updatedAt = 7;
+  bool favorited = 8;
+  uint32 favoritesCount = 9;
+  Profile author = 10;
+}
+
 message SingleArticleResponse {
-
-  message Author {
-      string username = 1;
-      string bio = 2;
-      string image = 3;
-      bool following = 4;
-  }
-
-  message Article {
-      string slug = 1;
-      string title = 2;
-      string description = 3;
-      string body = 4;
-      repeated string tag_list = 5;
-      google.protobuf.Timestamp created_at = 6;
-      google.protobuf.Timestamp updated_at = 7;
-      bool favorited = 8;
-      uint32 favorites_count = 9;
-      Author author = 10;
-  }
-
   Article article = 1;
+
+  // message Author {
+  //     string username = 1;
+  //     string bio = 2;
+  //     string image = 3;
+  //     bool following = 4;
+  // }
+
+  // message Article {
+  //     string slug = 1;
+  //     string title = 2;
+  //     string description = 3;
+  //     string body = 4;
+  //     repeated string tag_list = 5;
+  //     google.protobuf.Timestamp created_at = 6;
+  //     google.protobuf.Timestamp updated_at = 7;
+  //     bool favorited = 8;
+  //     uint32 favorites_count = 9;
+  //     Author author = 10;
+  // }
+
+  // Article article = 1;
 }
 
 message MultipleArticleResponse {
-
-    message Author {
-        string username = 1;
-        string bio = 2;
-        string image = 3;
-        bool following = 4;
-    }
-
-    message Articles {
-        string slug = 1;
-        string title = 2;
-        string description = 3;
-        repeated string tag_list = 4;
-        google.protobuf.Timestamp created_at = 5;
-        google.protobuf.Timestamp updated_at = 6;
-        bool favorited = 7;
-        uint32 favorites_count = 8;
-        Author author = 9;
-    }
-
-    repeated Articles articles = 1;
-    uint32 articles_count = 2;
+  repeated Article articles = 1;
+  uint32 articles_count = 2;
 }
 
 message SingleCommentResponse {

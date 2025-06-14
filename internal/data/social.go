@@ -336,6 +336,57 @@ func (ar *articleRepo) GetIsFavorited(ctx context.Context, aids []uint, uid uint
 	return result, nil
 }
 
+// 查询文章
+func (ar *articleRepo) ListArticlesByOptions(ctx context.Context, options *biz.ListOptions) ([]*biz.Article, error) {
+	db := ar.data.db.Model(&Article{}).Preload("Author").Preload("Tags").Preload("Favorites")
+
+	// 只返回当前用户相关的文章
+	if options.CurrentUid > 0 && options.Tag == "" && options.Author == "" && options.FavoritedBy == "" {
+		db = db.Joins("JOIN follows ON follows.following_id = articles.author_id").
+			Where("follows.follower_id = ?", options.CurrentUid)
+	} else {
+		// 按标签过滤
+		if options.Tag != "" {
+			db = db.Joins("JOIN article_tags ON articles.id = article_tags.article_id").
+				Joins("JOIN tags ON tags.id = article_tags.tag_id").
+				Where("tags.name = ?", options.Tag)
+		}
+		// 按作者过滤
+		if options.Author != "" {
+			db = db.Joins("JOIN users ON users.id = articles.author_id").
+				Where("users.username = ?", options.Author)
+		}
+		// 按被某用户收藏过滤
+		if options.FavoritedBy != "" {
+			db = db.Joins("JOIN article_favorites ON articles.id = article_favorites.article_id").
+				Joins("JOIN users u2 ON u2.id = article_favorites.user_id").
+				Where("u2.username = ?", options.FavoritedBy)
+		}
+	}
+
+	// 分页
+	if options.Limit > 0 {
+		db = db.Limit(int(options.Limit))
+	}
+	if options.Offset > 0 {
+		db = db.Offset(int(options.Offset))
+	}
+
+	// 执行查询
+	db = db.Order("articles.created_at DESC")
+	var articles []Article
+	if err := db.Find(&articles).Error; err != nil {
+		return nil, err
+	}
+
+	// 转换
+	articleList := make([]*biz.Article, len(articles))
+	for i, article := range articles {
+		articleList[i] = convertArticle(article)
+	}
+	return articleList, nil
+}
+
 type commentRepo struct {
 	data *Data
 	log  *log.Helper

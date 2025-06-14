@@ -11,7 +11,7 @@ import (
 
 func convertArticle(a *biz.Article) *v1.SingleArticleResponse {
 	return &v1.SingleArticleResponse{
-		Article: &v1.SingleArticleResponse_Article{
+		Article: &v1.Article{
 			Slug:           a.Slug,
 			Title:          a.Title,
 			Description:    a.Description,
@@ -21,7 +21,7 @@ func convertArticle(a *biz.Article) *v1.SingleArticleResponse {
 			UpdatedAt:      timestamppb.New(a.UpdatedAt),
 			Favorited:      a.Favorited,
 			FavoritesCount: a.FavoritesCount,
-			Author:         (*v1.SingleArticleResponse_Author)(convertProfile(a.Author)),
+			Author:         (*v1.Profile)(convertProfile(a.Author)),
 		},
 	}
 }
@@ -36,8 +36,38 @@ func convertComment(c *biz.Comment) *v1.Comment {
 	}
 }
 
-func (s *RealWorldService) ListArticles(ctx context.Context, in *v1.ListArticlesRequest) (*v1.MultipleArticleResponse, error) {
-	return &v1.MultipleArticleResponse{}, nil
+func (s *RealWorldService) ListArticles(ctx context.Context, req *v1.ListArticlesRequest) (*v1.MultipleArticleResponse, error) {
+	// 通过配置项传递
+	var opts []biz.ListOption
+	if req.Limit > 0 {
+		opts = append(opts, biz.WithLimit(int(req.Limit)))
+	}
+	if req.Offset > 0 {
+		opts = append(opts, biz.WithOffset(int(req.Offset)))
+	}
+	if req.Tag != "" {
+		opts = append(opts, biz.WithTag(req.Tag))
+	}
+	if req.Author != "" {
+		opts = append(opts, biz.WithAuthor(req.Author))
+	}
+	if req.Favorited != "" {
+		opts = append(opts, biz.WithFavoritedBy(req.Favorited))
+	}
+
+	a, err := s.uc.ListArticles(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	articles := make([]*v1.Article, 0)
+	for _, article := range a {
+		articles = append(articles, convertArticle(article).Article)
+	}
+	return &v1.MultipleArticleResponse{
+		Articles:      articles,
+		ArticlesCount: uint32(len(articles)),
+	}, nil
 }
 
 func (s *RealWorldService) FeedArticles(ctx context.Context, in *v1.FeedArticlesRequest) (*v1.MultipleArticleResponse, error) {

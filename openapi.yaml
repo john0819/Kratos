@@ -392,6 +392,34 @@ components:
             properties:
                 body:
                     type: string
+        realworld.v1.Article:
+            type: object
+            properties:
+                slug:
+                    type: string
+                title:
+                    type: string
+                description:
+                    type: string
+                body:
+                    type: string
+                tagList:
+                    type: array
+                    items:
+                        type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+                favorited:
+                    type: boolean
+                favoritesCount:
+                    type: integer
+                    format: uint32
+                author:
+                    $ref: '#/components/schemas/realworld.v1.Profile'
         realworld.v1.Comment:
             type: object
             properties:
@@ -464,47 +492,10 @@ components:
                 articles:
                     type: array
                     items:
-                        $ref: '#/components/schemas/realworld.v1.MultipleArticleResponse_Articles'
+                        $ref: '#/components/schemas/realworld.v1.Article'
                 articlesCount:
                     type: integer
                     format: uint32
-        realworld.v1.MultipleArticleResponse_Articles:
-            type: object
-            properties:
-                slug:
-                    type: string
-                title:
-                    type: string
-                description:
-                    type: string
-                tagList:
-                    type: array
-                    items:
-                        type: string
-                createdAt:
-                    type: string
-                    format: date-time
-                updatedAt:
-                    type: string
-                    format: date-time
-                favorited:
-                    type: boolean
-                favoritesCount:
-                    type: integer
-                    format: uint32
-                author:
-                    $ref: '#/components/schemas/realworld.v1.MultipleArticleResponse_Author'
-        realworld.v1.MultipleArticleResponse_Author:
-            type: object
-            properties:
-                username:
-                    type: string
-                bio:
-                    type: string
-                image:
-                    type: string
-                following:
-                    type: boolean
         realworld.v1.MultipleCommentResponse:
             type: object
             properties:
@@ -557,46 +548,7 @@ components:
             type: object
             properties:
                 article:
-                    $ref: '#/components/schemas/realworld.v1.SingleArticleResponse_Article'
-        realworld.v1.SingleArticleResponse_Article:
-            type: object
-            properties:
-                slug:
-                    type: string
-                title:
-                    type: string
-                description:
-                    type: string
-                body:
-                    type: string
-                tagList:
-                    type: array
-                    items:
-                        type: string
-                createdAt:
-                    type: string
-                    format: date-time
-                updatedAt:
-                    type: string
-                    format: date-time
-                favorited:
-                    type: boolean
-                favoritesCount:
-                    type: integer
-                    format: uint32
-                author:
-                    $ref: '#/components/schemas/realworld.v1.SingleArticleResponse_Author'
-        realworld.v1.SingleArticleResponse_Author:
-            type: object
-            properties:
-                username:
-                    type: string
-                bio:
-                    type: string
-                image:
-                    type: string
-                following:
-                    type: boolean
+                    $ref: '#/components/schemas/realworld.v1.Article'
         realworld.v1.SingleCommentResponse:
             type: object
             properties:

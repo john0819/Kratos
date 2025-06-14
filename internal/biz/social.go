@@ -61,6 +61,8 @@ type ArticleRepo interface {
 	FavoriteArticle(ctx context.Context, aid uint, uid uint) error
 	UnfavoriteArticle(ctx context.Context, aid uint, uid uint) error
 	GetIsFavorited(ctx context.Context, aids []uint, uid uint) (map[uint]bool, error)
+
+	ListArticlesByOptions(ctx context.Context, options *ListOptions) ([]*Article, error)
 }
 
 type CommentRepo interface {
@@ -240,6 +242,25 @@ func (uc *SocialUsecase) UnfavoriteArticle(ctx context.Context, slug string) (*A
 	}
 
 	return a, nil
+}
+
+// 查询文章
+func (uc *SocialUsecase) ListArticles(ctx context.Context, opts ...ListOption) ([]*Article, error) {
+	uc.log.Infof("list articles by opts: %v", opts)
+	// 查询参数 - 根据service层进行配置
+	options := NewListOptions(opts...)
+	// 当前用户 - 得看是否登录
+	currentUser, _ := auth.FromContext(ctx)
+	if currentUser != nil {
+		currentUid := currentUser.UserID
+		options.CurrentUid = currentUid
+	}
+	articles, err := uc.ar.ListArticlesByOptions(ctx, options)
+	if err != nil {
+		return nil, err
+	}
+
+	return articles, nil
 }
 
 func (uc *SocialUsecase) AddComment(ctx context.Context, slug string, c *Comment) (*Comment, error) {
