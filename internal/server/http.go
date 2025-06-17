@@ -58,6 +58,8 @@ func NewHTTPServer(c *conf.Server, jwt *conf.JWT, greeter *service.RealWorldServ
 		opts = append(opts, http.Timeout(c.Http.Timeout.AsDuration()))
 	}
 	srv := http.NewServer(opts...)
+	// 注册http服务到server上
+	// pb做网络监听、请求分发
 	v1.RegisterRealWorldHTTPServer(srv, greeter)
 	return srv
 }

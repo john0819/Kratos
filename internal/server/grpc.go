@@ -27,6 +27,7 @@ func NewGRPCServer(c *conf.Server, greeter *service.RealWorldService, logger log
 		opts = append(opts, grpc.Timeout(c.Grpc.Timeout.AsDuration()))
 	}
 	srv := grpc.NewServer(opts...)
+	// 注册grpc服务到server上
 	v1.RegisterRealWorldServer(srv, greeter)
 	return srv
 }

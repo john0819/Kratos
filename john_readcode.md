@@ -71,3 +71,22 @@ https://kubernetes.io/zh-cn/docs/concepts/services-networking/service/
 3. gateway ingress 网关
 
 路径：gateway -> service -> pod
+
+1. pb（protoc 生成代码）做的事情
+| 作用 | 具体内容 |
+|---------------------|------------------------------------------------------------------------------------------|
+| 1. 生成接口定义 | 生成 Go interface（如 RealWorldServer），你要实现这些接口 |
+| 2. 生成数据结构 | 生成所有请求/响应的 Go 结构体（如 LoginRequest、UserResponse） |
+| 3. 生成 handler | 生成 HTTP/gRPC 的 handler，把网络请求转成对你实现的接口方法的调用 |
+| 4. 生成注册函数 | 生成 RegisterRealWorldServer、RegisterRealWorldHTTPServer 等注册 service 的函数 |
+| 5. 生成客户端代码 | 生成 gRPC/HTTP 客户端调用代码（如 NewRealWorldClient） |
+这些都是自动生成的，不需要你手写。
+2. Kratos 框架做的事情
+| 作用 | 具体内容 |
+|---------------------|------------------------------------------------------------------------------------------|
+| 1. 网络服务启动 | 提供 http.NewServer、grpc.NewServer，负责监听端口、接收请求 |
+| 2. 中间件支持 | 提供认证、日志、限流、CORS、错误处理等中间件机制 |
+| 3. 配置管理 | 提供配置文件加载、依赖注入（wire）、日志、数据库等基础设施 |
+| 4. 生命周期管理 | 提供 kratos.App，统一管理服务的启动、关闭、信号处理等 |
+| 5. 依赖注入 | 通过 wire 自动组装 service、repo、data 等各层实例 |
+这些是 Kratos 框架本身的能力，帮你省去大量底层代码。
